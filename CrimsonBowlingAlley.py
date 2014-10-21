@@ -1,33 +1,110 @@
 import random # needed to test the program with random scores
-width_of_name_column = 12
-frames_per_game = 10
-max_throws_per_game = 2*9+3
+WIDTH_OF_NAME_COLUMN = 12
+FRAMES_PER_GAME = 10
+MAX_THROWS_PER_GAME = 2*9+3
 
-#extra ball in 10th frame!
+
+class Frame:
+	def __init__(self, num_throws):
+
+		self._num_throws = num_throws
+		self._throws = []
+
+	def get_throws_score_string(self):
+		result = "["
+		if(self._num_throws==2):
+			if self.get_first_throw()==10:
+				result += "X,-]" # X to indicate strike
+				return result
+			else:
+				result += str(self.get_first_throw())+","
+
+			if(self.get_second_throw() + self.get_first_throw() ==10):
+				result += "/]"
+				return result
+			else:
+				result += str(self.get_second_throw())+"]"
+				return result
+		else:
+			for idx in range(3):
+				if self.get_throw(idx)==10:
+					result += "X"
+				elif self.get_throw(idx) == 0:
+					result += "-"
+				else:
+					result += str(self.get_throw(idx))
+				if(idx != 2): #ugly (meant to prevent comma after last number)
+					result += ","
+			result += "]"
+			return result
+
+	def is_strike(self):
+		return self.get_first_throw()==10 and not self.is_three_throw_frame()
+
+	def is_spare(self):
+		return not self.is_strike() and self.get_first_throw()+ self.get_second_throw() == 10 and not self.is_three_throw_frame()
+
+	def is_done(self):
+		if not self.is_three_throw_frame():
+			return len(self._throws) >= self._num_throws
+		else:
+			if self.get_first_throw() == 10 and self.num_throws_taken()<3:
+				#strike: take two more shots
+				return False
+			elif self.get_first_throw()+self.get_second_throw() == 10 and self.num_throws_taken()==2:
+				#spare: take anoth shot
+				return False
+			else:
+				return self.num_throws_taken()>2
+			
+	def get_first_throw(self):
+		return self.get_throw(0)
+
+	def get_second_throw(self):
+		return self.get_throw(1)
+
+	def get_third_throw(self):
+		return self.get_throw(2)
+
+	def get_throw(self,index):
+		if index<len(self._throws):
+			return self._throws[index]
+		return 0
+
+	def input_new_throw(self,score):
+		assert not self.is_done()
+		self._throws.append(score)
+
+	def num_throws_taken(self):
+		return len(self._throws)
+
+	def is_three_throw_frame(self):
+		return self._num_throws ==3
+
+	def get_score_formatted_for_table_column(self,score):
+		'''
+		Gets this players name limitted to the width of the Name field in the score chart.  
+		This way, names cannot destort the spacing of the table.
+		'''
+		num_characters_to_display_throw_scores = 2+self.num_throws_taken()*2-1
+		return str(score).ljust(num_characters_to_display_throw_scores)[:num_characters_to_display_throw_scores]
+		#adds trailing spaces or truncates string to fit into table exactly
+
 
 
 class Player:
 	def __init__(self,new_name):
-		self.name = new_name
-		self.scores = [] # list of the number of pins the player knocks down on each throw
+		self._name = new_name
+		self.frames = []
 		self.current_frame = 0
-		self.num_throws_so_far_in_current_frame=0
-		for dummy_idx in range(max_throws_per_game):
-			self.scores.append(-1)
-	def get_score_string_for_throw(self,ball_idx):
-		if(len(self.scores)>ball_idx):
-			if ball_idx%2==0 and self.scores[ball_idx]==10:
-				return "X" # X to indicate strike
-			elif (ball_idx-1)%2==0 and self.scores[ball_idx-1]==10 and self.scores[ball_idx]==-1:
-				return "-" # if a strike was scored on the first ball of the frame, the second ball space is blank
-			elif (ball_idx-1)%2==0 and self.scores[ball_idx]+self.scores[ball_idx-1]==10:
-				return "/" # / to indicate spare
-			elif self.scores[ball_idx] == -1:
-				return "-"
-			return str(self.scores[ball_idx])
-		return"-"
+		for dummy_idx in range(FRAMES_PER_GAME-1):
+			self.frames.append(Frame(2))
+		self.frames.append(Frame(3))
+
 	def get_score_at(self,ball_idx):
 		if(len(self.scores)>ball_idx):
+			if self.scores[ball_idx]==-1:
+				return 0
 			return self.scores[ball_idx]
 		return 0
 	def get_name_formatted_for_table(self):
@@ -35,15 +112,7 @@ class Player:
 		Gets this players name limitted to the width of the Name field in the score chart.  
 		This way, names cannot destort the spacing of the table.
 		'''
-		return self.name.ljust(width_of_name_column)[:width_of_name_column]#adds trailing spaces or truncates string to fit into table exactly
-
-	def get_score_formatted_for_table(self,score):
-		'''
-		Gets this players name limitted to the width of the Name field in the score chart.  
-		This way, names cannot destort the spacing of the table.
-		'''
-		return str(score).ljust(5)[:5]#adds trailing spaces or truncates string to fit into table exactly
-
+		return self._name.ljust(width_of_name_column)[:width_of_name_column]#adds trailing spaces or truncates string to fit into table exactly
 
 	def print_score(self):
 		'''
@@ -52,76 +121,96 @@ class Player:
 		print("------------------------------------------------------------------------------------")
 
 		raw_scores_line = "|            |"
-		for i in range(frames_per_game):
-			raw_scores_line = raw_scores_line+"["+self.get_score_string_for_throw(i*2)+","+self.get_score_string_for_throw(i*2+1)+"]|"
-		raw_scores_line = raw_scores_line+"         |"
-
+		for i in range(FRAMES_PER_GAME):
+			raw_scores_line += self.frames[i].get_throws_score_string()+"|"
+		raw_scores_line += "         |"
 		print(raw_scores_line)
 
-		bottom_row = "|"+self.get_name_formatted_for_table()+"|"
-		
-		accumulated_score = 0
-		for idx in range (10):
-			#print self.get_score_at(idx*2)
-			
 
-			if self.get_score_at(idx*2) ==10: #strike
-				#add next 2 throws to score of this frame
-				accumulated_score += 10
-				if self.get_score_at(idx*2+2)==10:
-					accumulated_score += self.get_score_at(idx*2+2)
-					accumulated_score += self.get_score_at(idx*2+4)
+		accumulated_scores = self.get_accumulated_scores_per_frame()
+		accumulated_score_line = "|            |"
+		for i in range(FRAMES_PER_GAME):
+			accumulated_score_line += self.frames[i].get_score_formatted_for_table_column(str(accumulated_scores[i])) + "|"
+		accumulated_score_line += "         |"
+		print(accumulated_score_line)
 
-				else:
-					accumulated_score += self.get_score_at(idx*2+2) + self.get_score_at(idx*2+1+2)
+	def get_value_of_two_throws_after_frame(self, index): 
+		#TODO: improve name of index
+		return self.get_value_of__first_throw_after_frame(index) + self.get_value_of__second_throw_after_frame(index)
 
+	def get_value_of__first_throw_after_frame(self, index):
+		if index == 9:
+			return 0
+		else:
+			return self.frames[index+1].get_first_throw()
+
+	def get_value_of__second_throw_after_frame(self, index):
+		if index == 9:
+			return 0
+		else:
+			if not self.frames[index+1].is_strike():
+				return self.frames[index+1].get_second_throw()
 			else:
-				accumulated_score += self.get_score_at(idx*2) + self.get_score_at(idx*2+1)
-			bottom_row = bottom_row +	self.get_score_formatted_for_table(str(accumulated_score))+"|"
+				return get_value_of__first_throw_after_frame(index+1)
 
-		bottom_row = bottom_row +	"         |"
-		print(bottom_row)
+	def get_accumulated_scores_per_frame(self):
+		accumulated_score=0
+		result = []
+		for i in range(FRAMES_PER_GAME):
+			if(self.frames[i].is_strike()):
+				accumulated_score+=10
+				accumulated_score += self.get_value_of_two_throws_after_frame(i)
+			elif(self.frames[i].is_spare()):
+				accumulated_score+=10
+				accumulated_score += self.get_value_of__first_throw_after_frame(i)
+			else:
+				accumulated_score += self.frames[i].get_first_throw() + self.frames[i].get_second_throw()
+				accumulated_score += self.frames[i].get_third_throw() 
+				#still valid operation for two throw frames becuase they will simply return 0
+			result.append(accumulated_score)
+		return result
 
+	def has_another_throw_to_make(self):
+		return self.current_frame < 10
 
 	def score(self, score):
-		if(self.current_frame==9):
-			pass #  deal with three throws in frame 9
-		else:
-			self.scores[self.current_frame*2+self.num_throws_so_far_in_current_frame]=score
-			if(self.num_throws_so_far_in_current_frame==1):
-				self.num_throws_so_far_in_current_frame=0
-				self.current_frame += 1
+		if self.has_another_throw_to_make():
+			if not self.get_current_frame().is_done():
+				self.get_current_frame().input_new_throw(score)
 			else:
-				self.num_throws_so_far_in_current_frame=1;
+				self.current_frame += 1
+				self.score(score)
+		
+			
+
+	def get_current_frame(self):
+		return self.frames[self.current_frame]
 
 
 
-def print_score_sheet():
+def print_score_sheet(players):
 	print("==================================Current=Scores====================================")
 	print("|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  | 10  |  Total  |")
 	for player in players:
 		player.print_score();
 
-num_players = int(raw_input("enter the number of players: "))
-players = []
 
 
-for i in range(1,num_players+1):
-	new_player = Player(raw_input("enter the name of player "+str(i)+": "))
-	players.append(new_player)
-	new_player.print_score();
-	for dummy_idx in range(20):
-		total_frame_score = 10#int(random.randrange(0,11))
-		first_score = 10
-		#if(total_frame_score != 0 and random.random()<.9):
-		#	first_score = total_frame_score-int(random.randrange(0,total_frame_score))
-		second_score = total_frame_score-first_score
-		new_player.score(first_score)
-		new_player.score(second_score)
+def run():
+	num_players = int(raw_input("enter the number of players: "))
+	players = []
 
+	for i in range(1,num_players+1):
+		new_player = Player(raw_input("enter the name of player "+str(i)+": "))
+		players.append(new_player)
+		while new_player.has_another_throw_to_make():
+			if(new_player.get_current_frame().num_throws_taken()==0):
+				new_player.score(random.randrange(0,11))
+			else:
+				new_player.score(random.randrange(0,11-new_player.get_current_frame().get_first_throw()))
 
+	print_score_sheet(players)
 
-
-print_score_sheet()
+run()
 
 
