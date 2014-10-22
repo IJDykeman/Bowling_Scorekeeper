@@ -26,6 +26,20 @@ class Frame:
 		self._num_throws = num_throws
 		self._throws = []
 
+	def get_throw(self,index):
+		if index<len(self._throws):
+			return self._throws[index]
+		return 0	
+			
+	def get_first_throw(self):
+		return self.get_throw(0)
+
+	def get_second_throw(self):
+		return self.get_throw(1)
+
+	def get_third_throw(self):
+		return self.get_throw(2)
+
 	def get_throws_score_string(self):
 		"""
 		Returns a string which is a readable representations of the scores the
@@ -80,20 +94,6 @@ class Frame:
 				return False
 			else:
 				return self.num_throws_taken()>1
-			
-	def get_first_throw(self):
-		return self.get_throw(0)
-
-	def get_second_throw(self):
-		return self.get_throw(1)
-
-	def get_third_throw(self):
-		return self.get_throw(2)
-
-	def get_throw(self,index):
-		if index<len(self._throws):
-			return self._throws[index]
-		return 0
 
 	def input_new_throw(self,score):
 		assert not self.is_done()
@@ -215,7 +215,7 @@ def print_score_sheet(players):
 	for player in players:
 		player.print_score();
 
-def run():
+def random_run():
 	num_players = int(raw_input("enter the number of players: "))
 	players = []
 	for i in range(1,num_players+1):
@@ -223,10 +223,38 @@ def run():
 		players.append(new_player)
 		while new_player.has_another_throw_to_make():
 			if(new_player.get_current_frame().num_throws_taken()==0):
-				new_player.score(10)#random.randrange(0,11))
+				new_player.score(random.randrange(0,11))
 			else:
-				new_player.score(10)#random.randrange(0,11-new_player.get_current_frame().get_first_throw()))
+				new_player.score(random.randrange(0,11-new_player.get_current_frame().get_first_throw()))
 	print_score_sheet(players)
+
+def all_players_done(players): #TODO improve with idiomatic solution?
+	for player in players:
+		if player.has_another_throw_to_make():
+			return False
+	return True
+
+def get_score_input():
+	input = raw_input("enter pin state: ")
+	if input.isdigit():
+		return int(input)
+	else:
+		return(get_score_input())
+
+
+def run():
+	num_players = int(raw_input("enter the number of players: "))
+	players = []
+	for i in range(1,num_players+1):
+		new_player = Player(raw_input("enter the name of player "+str(i)+": "))
+		players.append(new_player)
+	while not all_players_done(players):
+		for player in players:
+			if player.has_another_throw_to_make():
+				player.score(get_score_input())
+		print_score_sheet(players)
+
+
 
 run()
 
