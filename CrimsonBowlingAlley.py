@@ -1,12 +1,15 @@
 import random # needed to test the program with random scores
 WIDTH_OF_NAME_COLUMN = 12
 FRAMES_PER_GAME = 10
-MAX_THROWS_PER_GAME = 2*9+3
-
-
+MAX_THROWS_PER_GAME = 2*9+3 # nine frames of two balls, plus a frame of 2 or 3 balls
+PLAYER_ROW_DIVIDER = "--------------------------------------------------------------------------------------"
+TABLE_HEADER       = "====================================Current=Scores===================================="
+COLUMNS_HEADER     = "|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |"
 class Frame:
-	def __init__(self, num_throws):
+	'''
 
+	'''
+	def __init__(self, num_throws):
 		self._num_throws = num_throws
 		self._throws = []
 
@@ -31,6 +34,8 @@ class Frame:
 					result += "X"
 				elif self.get_throw(idx) == 0:
 					result += "-"
+				elif idx == 1 and self.get_throw(0) +self.get_throw(1) == 10:
+					result += "/"
 				else:
 					result += str(self.get_throw(idx))
 				if(idx != 2): #ugly (meant to prevent comma after last number)
@@ -42,7 +47,8 @@ class Frame:
 		return self.get_first_throw()==10 and not self.is_three_throw_frame()
 
 	def is_spare(self):
-		return not self.is_strike() and self.get_first_throw()+ self.get_second_throw() == 10 and not self.is_three_throw_frame()
+		sums_to_10 = self.get_first_throw() + self.get_second_throw() == 10
+		return sums_to_10 and not self.is_strike() and not self.is_three_throw_frame()
 
 	def is_done(self):
 		if not self.is_three_throw_frame():
@@ -52,10 +58,10 @@ class Frame:
 				#strike: take two more shots
 				return False
 			elif self.get_first_throw()+self.get_second_throw() == 10 and self.num_throws_taken()==2:
-				#spare: take anoth shot
+				#spare: take another shot
 				return False
 			else:
-				return self.num_throws_taken()>2
+				return self.num_throws_taken()>1
 			
 	def get_first_throw(self):
 		return self.get_throw(0)
@@ -79,14 +85,13 @@ class Frame:
 		return len(self._throws)
 
 	def is_three_throw_frame(self):
-		return self._num_throws ==3
+		return self._num_throws == 3
 
 	def get_score_formatted_for_table_column(self,score):
 		'''
-		Gets this players name limitted to the width of the Name field in the score chart.  
-		This way, names cannot destort the spacing of the table.
+		
 		'''
-		num_characters_to_display_throw_scores = 2+self.num_throws_taken()*2-1
+		num_characters_to_display_throw_scores = 2+ self._num_throws*2-1
 		return str(score).ljust(num_characters_to_display_throw_scores)[:num_characters_to_display_throw_scores]
 		#adds trailing spaces or truncates string to fit into table exactly
 
@@ -118,7 +123,7 @@ class Player:
 		'''
 		prints the line of the score table that describes this player's scores
 		'''
-		print("------------------------------------------------------------------------------------")
+		print(PLAYER_ROW_DIVIDER)
 
 		raw_scores_line = "|            |"
 		for i in range(FRAMES_PER_GAME):
@@ -187,19 +192,15 @@ class Player:
 		return self.frames[self.current_frame]
 
 
-
 def print_score_sheet(players):
-	print("==================================Current=Scores====================================")
-	print("|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  | 10  |  Total  |")
+	print(TABLE_HEADER)
+	print(COLUMNS_HEADER)
 	for player in players:
 		player.print_score();
-
-
 
 def run():
 	num_players = int(raw_input("enter the number of players: "))
 	players = []
-
 	for i in range(1,num_players+1):
 		new_player = Player(raw_input("enter the name of player "+str(i)+": "))
 		players.append(new_player)
@@ -208,7 +209,6 @@ def run():
 				new_player.score(random.randrange(0,11))
 			else:
 				new_player.score(random.randrange(0,11-new_player.get_current_frame().get_first_throw()))
-
 	print_score_sheet(players)
 
 run()
