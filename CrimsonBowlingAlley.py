@@ -1,3 +1,12 @@
+"""Bowling Score Keeper
+
+This module is designed to take input from bowling alley hardware, and 
+update and display player scores.
+
+"""
+
+
+
 import random # needed to test the program with random scores
 WIDTH_OF_NAME_COLUMN = 12
 FRAMES_PER_GAME = 10
@@ -5,50 +14,59 @@ MAX_THROWS_PER_GAME = 2*9+3 # nine frames of two balls, plus a frame of 2 or 3 b
 PLAYER_ROW_DIVIDER = "--------------------------------------------------------------------------------------"
 TABLE_HEADER       = "====================================Current=Scores===================================="
 COLUMNS_HEADER     = "|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |"
-class Frame:
-	'''
 
-	'''
+
+
+
+class Frame:
+	"""A single frame in one player's bowling game
+
+	"""
 	def __init__(self, num_throws):
 		self._num_throws = num_throws
 		self._throws = []
 
 	def get_throws_score_string(self):
-		result = "["
-		if(self._num_throws==2):
+		"""
+		Returns a string which is a readable representations of the scores the
+		player has made on the throws in this frame.
+		"""
+		if not self.is_three_throw_frame(): 
+			# requires seperate logic for frames 1-9 and frame 10
 			if self.get_first_throw()==10:
-				result += "X,-]" # X to indicate strike
-				return result
-			else:
-				result += str(self.get_first_throw())+","
-
+				return "[X,-]"
+			first_symbol  = self.get_first_throw()
+			second_symbol = self.get_second_throw()
 			if(self.get_second_throw() + self.get_first_throw() ==10):
-				result += "/]"
-				return result
-			else:
-				result += str(self.get_second_throw())+"]"
-				return result
+				second_symbol = "/"
+
+			return "[%s,%s]" % (first_symbol,second_symbol)
 		else:
-			for idx in range(3):
-				if self.get_throw(idx)==10:
-					result += "X"
-				elif self.get_throw(idx) == 0:
-					result += "-"
-				elif idx == 1 and self.get_throw(0) +self.get_throw(1) == 10:
-					result += "/"
+			first_symbol  = self.get_first_throw()
+			second_symbol = self.get_second_throw()
+			third_symbol  = "-"
+			if self.is_spare():
+				third_symbol = self.get_third_throw()
+			elif self.get_first_throw() == 10:
+				first_symbol  = "X"
+			if self.get_second_throw() == 10:
+				if self.get_first_throw() == 10:
+					second_symbol = "X"
 				else:
-					result += str(self.get_throw(idx))
-				if(idx != 2): #ugly (meant to prevent comma after last number)
-					result += ","
-			result += "]"
-			return result
+					second_symbol = "/"
+			elif self.get_first_throw() + self.get_second_throw() == 10:
+				second_symbol = "/"
+			if self.get_first_throw() == 10:
+				third_symbol  = "X"
+
+			return "[%s,%s,%s]" % (first_symbol, second_symbol, third_symbol)
 
 	def is_strike(self):
 		return self.get_first_throw()==10 and not self.is_three_throw_frame()
 
 	def is_spare(self):
 		sums_to_10 = self.get_first_throw() + self.get_second_throw() == 10
-		return sums_to_10 and not self.is_strike() and not self.is_three_throw_frame()
+		return sums_to_10 and not self.is_strike()
 
 	def is_done(self):
 		if not self.is_three_throw_frame():
@@ -57,7 +75,7 @@ class Frame:
 			if self.get_first_throw() == 10 and self.num_throws_taken()<3:
 				#strike: take two more shots
 				return False
-			elif self.get_first_throw()+self.get_second_throw() == 10 and self.num_throws_taken()==2:
+			elif self.is_spare() and self.num_throws_taken()==2:
 				#spare: take another shot
 				return False
 			else:
@@ -112,6 +130,7 @@ class Player:
 				return 0
 			return self.scores[ball_idx]
 		return 0
+
 	def get_name_formatted_for_table(self):
 		'''
 		Gets this players name limitted to the width of the Name field in the score chart.  
@@ -132,7 +151,7 @@ class Player:
 		print(raw_scores_line)
 
 
-		accumulated_scores = self.get_accumulated_scores_per_frame()
+		accumulated_scores = self.get_score_list()
 		accumulated_score_line = "|            |"
 		for i in range(FRAMES_PER_GAME):
 			accumulated_score_line += self.frames[i].get_score_formatted_for_table_column(str(accumulated_scores[i])) + "|"
@@ -145,7 +164,7 @@ class Player:
 
 	def get_value_of__first_throw_after_frame(self, index):
 		if index == 9:
-			return 0
+			return self.frames[9].get_third_throw()
 		else:
 			return self.frames[index+1].get_first_throw()
 
@@ -156,21 +175,21 @@ class Player:
 			if not self.frames[index+1].is_strike():
 				return self.frames[index+1].get_second_throw()
 			else:
-				return get_value_of__first_throw_after_frame(index+1)
+				return self.get_value_of__first_throw_after_frame(index+1)
 
-	def get_accumulated_scores_per_frame(self):
+	def get_score_list(self):
 		accumulated_score=0
 		result = []
-		for i in range(FRAMES_PER_GAME):
-			if(self.frames[i].is_strike()):
+		for i, frame in enumerate(self.frames):
+			if(frame.is_strike()):
 				accumulated_score+=10
 				accumulated_score += self.get_value_of_two_throws_after_frame(i)
-			elif(self.frames[i].is_spare()):
+			elif(frame.is_spare()):
 				accumulated_score+=10
 				accumulated_score += self.get_value_of__first_throw_after_frame(i)
 			else:
-				accumulated_score += self.frames[i].get_first_throw() + self.frames[i].get_second_throw()
-				accumulated_score += self.frames[i].get_third_throw() 
+				accumulated_score += frame.get_first_throw() + frame.get_second_throw()
+				accumulated_score += frame.get_third_throw() 
 				#still valid operation for two throw frames becuase they will simply return 0
 			result.append(accumulated_score)
 		return result
@@ -184,9 +203,7 @@ class Player:
 				self.get_current_frame().input_new_throw(score)
 			else:
 				self.current_frame += 1
-				self.score(score)
-		
-			
+				self.score(score)		
 
 	def get_current_frame(self):
 		return self.frames[self.current_frame]
@@ -206,9 +223,9 @@ def run():
 		players.append(new_player)
 		while new_player.has_another_throw_to_make():
 			if(new_player.get_current_frame().num_throws_taken()==0):
-				new_player.score(random.randrange(0,11))
+				new_player.score(10)#random.randrange(0,11))
 			else:
-				new_player.score(random.randrange(0,11-new_player.get_current_frame().get_first_throw()))
+				new_player.score(10)#random.randrange(0,11-new_player.get_current_frame().get_first_throw()))
 	print_score_sheet(players)
 
 run()
