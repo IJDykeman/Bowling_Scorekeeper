@@ -69,6 +69,8 @@ class Frame:
 		player has made on the throws in this frame.
 		"""
 		if not self.is_three_throw_frame(): 
+			if not self.is_done():
+				return "[ , ]"
 			# seperate logic for frames 1-9 and frame 10
 			first_symbol  = self.get_first_throw()
 			second_symbol = self.get_second_throw()
@@ -78,6 +80,8 @@ class Frame:
 				second_symbol = "/"
 			return "[%s,%s]" % (first_symbol,second_symbol)
 		else: # is three throw frame
+			if not self.is_done():
+				return "[ , , ]"
 			first_symbol  = self.get_first_throw()
 			second_symbol = self.get_second_throw()
 			third_symbol  = "-"
@@ -209,6 +213,7 @@ class Player:
 		the spacing of the table.
 		"""
 		return self._name.ljust(WIDTH_OF_NAME_COLUMN)[:WIDTH_OF_NAME_COLUMN]
+
 	def get_total_score_formatted_for_table(self, score):
 		"""
 		Returns (string) this score limitted in length to the width of the 
@@ -236,7 +241,11 @@ class Player:
 		accumulated_score_line.append("|            |")
 		for i,frame in enumerate(self._frames):
 			score = str(accumulated_scores[i])
-			formatted_score = frame.get_score_formatted_for_table(score) + "|"
+			formatted_score = ""
+			if frame.is_done():
+				formatted_score = frame.get_score_formatted_for_table(score) + "|"
+			else:
+				formatted_score = frame.get_score_formatted_for_table("") + "|"
 			accumulated_score_line.append(formatted_score)
 		total_score = max(accumulated_scores)
 		formatted_total = self.get_total_score_formatted_for_table(total_score)
@@ -368,14 +377,6 @@ def all_players_done(players):
 			return False
 	return True
 
-'''def get_score_input(player_name):
-
-	input = raw_input("enter pin state for %s: " %(player_name))
-	if input.isdigit():
-		return int(input)
-	else:
-		return(get_score_input(player_name))'''
-
 def get_num_pins_down(player_name):
 	input = raw_input("enter pin state for %s: " %(player_name))
 	input = input.upper();
@@ -389,9 +390,11 @@ def play_one_frame(player):
 	num_pins_down = 0
 	while player.has_another_throw_to_make_in_game() and start_frame == player.get_current_frame():
 		num_pins_down_on_this_throw = get_num_pins_down(player.get_name())
+		#if(num_pins_down_on_this_throw>=num_pins_down):
+			# this is to ensure that incorrect machine reading which says a pin
+			# has come back up does not result in a negative score
 		player.score(num_pins_down_on_this_throw-num_pins_down)
 		num_pins_down = num_pins_down_on_this_throw
-
 
 def run():
 	num_players = int(raw_input("enter the number of players: "))
@@ -404,18 +407,43 @@ def run():
 			play_one_frame(player)
 		print_score_sheet(players)
 
-'''def random_run():
-	num_players = int(raw_input("enter the number of players: "))
-	players = []
-	for i in range(1,num_players+1):
-		new_player = Player(raw_input("enter the name of player "+str(i)+": "))
-		players.append(new_player)
-	while not all_players_done(players):
-		print("Round complete!")
-		for player in players:
-			play_one_frame(player)
-
-		print_score_sheet(players)'''
-
-
 run()
+
+'''
+Example usage of this module:
+
+enter the number of players: 2   
+enter the name of player 1: Crimson
+enter the name of player 2: Intern
+enter pin state for Crimson: tttfffffff
+enter pin state for Crimson: ffffffffff
+enter pin state for Intern: ttttffffftt
+invalid pin state string                
+enter pin state for Intern: ttttffffff 
+enter pin state for Intern: ttttffffff
+====================================Current=Scores====================================
+|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
+--------------------------------------------------------------------------------------
+|Crimson     |[7,/]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
+|            |10   |     |     |     |     |     |     |     |     |       |10       |
+--------------------------------------------------------------------------------------
+|Intern      |[6,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
+|            |6    |     |     |     |     |     |     |     |     |       |6        |
+enter pin state for Crimson: tttffftttt
+enter pin state for Crimson: fffffftttt
+enter pin state for Intern: fffftttttt
+enter pin state for Intern: ffffffffff
+====================================Current=Scores====================================
+|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
+--------------------------------------------------------------------------------------
+|Crimson     |[7,/]|[3,3]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
+|            |13   |19   |     |     |     |     |     |     |     |       |19       |
+--------------------------------------------------------------------------------------
+|Intern      |[6,0]|[4,/]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
+|            |6    |16   |     |     |     |     |     |     |     |       |16       |
+'''
+
+
+
+
+
