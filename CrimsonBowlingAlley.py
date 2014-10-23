@@ -9,8 +9,8 @@ This module was written by Isaac Dykeman
 
 import random
 WIDTH_OF_NAME_COLUMN = 12
-FRAMES_PER_GAME = 10
-MAX_THROWS_PER_GAME = 2*9+3 # nine frames of 2 balls, and a frame of 2 or 3 balls
+_FRAMES_PER_GAME = 10
+MAX_THROWS_PER_GAME = 2*9+3 # nine _frames of 2 balls, and a frame of 2 or 3 balls
 PLAYER_ROW_DIVIDER = "--------------------------------------------------------------------------------------"
 TABLE_HEADER       = "====================================Current=Scores===================================="
 COLUMNS_HEADER     = "|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |"
@@ -95,74 +95,109 @@ class Frame:
 
 	def is_strike(self):
 		"""
-		Returns True if the first throw scored 10 (if the frame is a strike),
-		else returns False
+		Returns whether the frame is a strike: True if the first throw scored 
+		10, else, False
 		"""
 		return self.get_first_throw()==10
 
 	def is_spare(self):
 		"""
-
+		Returns whether the frame is a spare: True if the sum of the first and
+		second throw scores is 10 and the frame is not a strike, else, False.
 		"""
 		sums_to_10 = self.get_first_throw() + self.get_second_throw() == 10
 		return sums_to_10 and not self.is_strike()
 
 	def is_done(self):
+		"""
+		Returns True if there is another ball to be thrown in this frame, else,
+		returns False.
+		"""
 		if not self.is_three_throw_frame():
 			return len(self._throws) >= self._num_throws or self.is_strike()
-		else:
-			if self.get_first_throw() == 10 and self.num_throws_taken()<3:
-				#strike: take two more shots
+		else: # is a two ball frame
+			if self.is_strike() and self.num_throws_taken()<self._num_throws:
+				#strike results in two extra throws on the third frame
 				return False
 			elif self.is_spare() and self.num_throws_taken()==2:
-				#spare: take another shot
+				#spare results in one extra shot
 				return False
 			else:
-				return self.num_throws_taken()>1
+				#when not a spare or a strike, the last frame has two throws
+				return self.num_throws_taken()>=2
 
 	def input_new_throw(self,score):
-		assert not self.is_done()
+		"""
+		Adds the players score on a throw to this frame.
+
+		Args:
+			score (int): The number of pins the player knocked down on this
+				throw.  Be cautious: this is not necesarilly the same as the
+				total number of pins that are down at this time.
+		"""
+		assert not self.is_done() # a full frame cannot accept more thows
 		self._throws.append(score)
 
 	def num_throws_taken(self):
+		"""
+		Returns (int) the number of thows taken in this frame so far.
+		"""
 		return len(self._throws)
 
 	def is_three_throw_frame(self):
+		"""
+		Returns True if this is the final frame, which has a max of three
+		throws.
+		"""
 		return self._num_throws == 3
 
 	def get_num_throws(self):
+		"""
+		Returns (int) the max number of throws possible in this frame.
+		"""
 		return self._num_throws
 
 	def get_score_formatted_for_table_column(self,score):
-		'''
-		
-		'''
-		num_characters_to_display_throw_scores = 2+ self._num_throws*2-1
-		return str(score).ljust(num_characters_to_display_throw_scores)[:num_characters_to_display_throw_scores]
-		#adds trailing spaces or truncates string to fit into table exactly
+		"""
+		Returns (string) the textual representation of the total score of the
+		game at this frame.  The length of the result string is trimmed so that
+		it does not warp the formatting of the table when it is printed.
 
+		Args:
+			score (int): The score that should be displayed in this frame of
+			the table.
+		"""
+		width_of_table_column = 2 + self._num_throws * 2 - 1
+		left_justified_score = str(score).ljust(width_of_table_column)
+		return left_justified_score[:width_of_table_column]		
 
 
 class Player:
+	"""
+	Represents a single player of a bowling game.  Contains that player's score
+	data and name, and tracks which frame the player is currently on
 
-	def __init__(self,new_name):
-		self._name = new_name
-		self.frames = []
-		self.current_frame = 0
-		for dummy_idx in range(FRAMES_PER_GAME-1):
-			self.frames.append(Frame(2))
-		self.frames.append(Frame(3))
+	Args:
+		name (string): The name of the player.
+
+	Attributes:
+		_name (string): Player's name.
+		_throws (list of Frame): Player's frames
+		_current_frame (int): The index of the frame the player is on.
+	"""
+	def __init__(self,name):
+		self._name = name
+		self._frames = []
+		self._current_frame = 0
+		for dummy_idx in range(_FRAMES_PER_GAME-1):
+			self._frames.append(Frame(2))
+		self._frames.append(Frame(3))
 
 	def get_name(self):
-		'''returns the player's name'''
+		"""
+		Returns (string) the player's name.
+		"""
 		return self._name
-
-	def get_score_at(self,ball_idx):
-		if(len(self.scores)>ball_idx):
-			if self.scores[ball_idx]==-1:
-				return 0
-			return self.scores[ball_idx]
-		return 0
 
 	def get_name_formatted_for_table(self):
 		'''
@@ -178,15 +213,15 @@ class Player:
 		print(PLAYER_ROW_DIVIDER)
 
 		raw_scores_line = "|            |"
-		for i in range(FRAMES_PER_GAME):
-			raw_scores_line += self.frames[i].get_throws_score_string()+"|"
+		for i in range(_FRAMES_PER_GAME):
+			raw_scores_line += self._frames[i].get_throws_score_string()+"|"
 		raw_scores_line += "         |"
 		print(raw_scores_line)
 
 
 		accumulated_scores = self.get_score_list()
 		accumulated_score_line = "|            |"
-		for i,frame in enumerate(self.frames):
+		for i,frame in enumerate(self._frames):
 			accumulated_score_line += frame.get_score_formatted_for_table_column(str(accumulated_scores[i])) + "|"
 		accumulated_score_line += "         |"
 		print(accumulated_score_line)
@@ -197,23 +232,23 @@ class Player:
 
 	def get_value_of__first_throw_after_frame(self, index):
 		if index == 9:
-			return self.frames[9].get_third_throw()
+			return self._frames[9].get_third_throw()
 		else:
-			return self.frames[index+1].get_first_throw()
+			return self._frames[index+1].get_first_throw()
 
 	def get_value_of__second_throw_after_strike_on_frame(self, index):
-		if self.frames[index].is_three_throw_frame():
-			return self.frames[index].get_third_throw()
+		if self._frames[index].is_three_throw_frame():
+			return self._frames[index].get_third_throw()
 		else:
-			if not self.frames[index+1].is_strike():
-				return self.frames[index+1].get_second_throw()
+			if not self._frames[index+1].is_strike():
+				return self._frames[index+1].get_second_throw()
 			else:
 				return self.get_value_of__first_throw_after_frame(index+1)
 
 	def get_score_list(self):
 		accumulated_score=0
 		result = []
-		for i, frame in enumerate(self.frames):
+		for i, frame in enumerate(self._frames):
 			if frame.is_three_throw_frame():
 				accumulated_score += frame.get_first_throw()
 				accumulated_score += frame.get_second_throw()
@@ -231,17 +266,17 @@ class Player:
 		return result
 
 	def has_another_throw_to_make_in_game(self):
-		return self.current_frame < 10
+		return self._current_frame < 10
 
 	def score(self, score):
 		if self.has_another_throw_to_make_in_game():
 			if not self.get_current_frame().is_done():
 				self.get_current_frame().input_new_throw(score)
 				if self.get_current_frame().is_done():
-					self.current_frame += 1	
+					self._current_frame += 1	
 
 	def get_current_frame(self):
-		return self.frames[self.current_frame]
+		return self._frames[self._current_frame]
 
 
 def print_score_sheet(players):
@@ -262,7 +297,7 @@ def get_score_input(player_name):
 	if input.isdigit():
 		return int(input)
 	else:
-		return(get_score_input())
+		return(get_score_input(player_name))
 
 def run():
 	num_players = int(raw_input("enter the number of players: "))
