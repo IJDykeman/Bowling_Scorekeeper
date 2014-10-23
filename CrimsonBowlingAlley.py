@@ -9,7 +9,8 @@ This module was written by Isaac Dykeman
 
 import random
 WIDTH_OF_NAME_COLUMN = 12
-_FRAMES_PER_GAME = 10
+WIDTH_OF_TOTAL_COLUMN = 9
+FRAMES_PER_GAME = 10
 MAX_THROWS_PER_GAME = 2*9+3 # nine _frames of 2 balls, and a frame of 2 or 3 balls
 PLAYER_ROW_DIVIDER = "--------------------------------------------------------------------------------------"
 TABLE_HEADER       = "====================================Current=Scores===================================="
@@ -88,8 +89,11 @@ class Frame:
 				first_symbol  = "X"
 			elif self.is_spare():
 				second_symbol = "/"
+			if self.get_second_throw() == 10:
+				second_symbol = "X"
 			if self.get_third_throw() == 10:
 				third_symbol = "X"
+
 
 			return "[%s,%s,%s]" % (first_symbol, second_symbol, third_symbol)
 
@@ -157,7 +161,7 @@ class Frame:
 		"""
 		return self._num_throws
 
-	def get_score_formatted_for_table_column(self,score):
+	def get_score_formatted_for_table(self,score):
 		"""
 		Returns (string) the textual representation of the total score of the
 		game at this frame.  The length of the result string is trimmed so that
@@ -189,7 +193,7 @@ class Player:
 		self._name = name
 		self._frames = []
 		self._current_frame = 0
-		for dummy_idx in range(_FRAMES_PER_GAME-1):
+		for dummy_idx in range(FRAMES_PER_GAME-1):
 			self._frames.append(Frame(2))
 		self._frames.append(Frame(3))
 
@@ -200,31 +204,44 @@ class Player:
 		return self._name
 
 	def get_name_formatted_for_table(self):
-		'''
-		Gets this players name limitted to the width of the Name field in the score chart.  
-		This way, names cannot destort the spacing of the table.
-		'''
-		return self._name.ljust(width_of_name_column)[:width_of_name_column]#adds trailing spaces or truncates string to fit into table exactly
+		"""
+		Returns (string) this players name limitted in length to the width of 
+		the Name column in the score chart.  This way, names cannot destort
+		the spacing of the table.
+		"""
+		return self._name.ljust(WIDTH_OF_NAME_COLUMN)[:WIDTH_OF_NAME_COLUMN]
+	def get_total_score_formatted_for_table(self, score):
+		"""
+		Returns (string) this score limitted in length to the width of the 
+		Total column in the score chart.  This way, names cannot destort the
+		spacing of the table.
+		"""
+		return str(score).ljust(WIDTH_OF_TOTAL_COLUMN)[:WIDTH_OF_TOTAL_COLUMN]
 
 	def print_score(self):
-		'''
-		prints the line of the score table that describes this player's scores
-		'''
+		"""
+		Prints the lines of the score table that describe this player's scores.
+		"""
 		print(PLAYER_ROW_DIVIDER)
-
-		raw_scores_line = "|            |"
-		for i in range(_FRAMES_PER_GAME):
-			raw_scores_line += self._frames[i].get_throws_score_string()+"|"
-		raw_scores_line += "         |"
-		print(raw_scores_line)
-
-
+		raw_scores_line = []
+		raw_scores_line.append("|%s|" % (self.get_name_formatted_for_table()))
+		for i in range(FRAMES_PER_GAME):
+			raw_scores_line.append(self._frames[i].get_throws_score_string())
+			raw_scores_line.append("|")
+		raw_scores_line.append("         |")
+		print(''.join(raw_scores_line))
 		accumulated_scores = self.get_score_list()
-		accumulated_score_line = "|            |"
+		accumulated_score_line = []
+		accumulated_score_line.append("|            |")
 		for i,frame in enumerate(self._frames):
-			accumulated_score_line += frame.get_score_formatted_for_table_column(str(accumulated_scores[i])) + "|"
-		accumulated_score_line += "         |"
-		print(accumulated_score_line)
+			score = str(accumulated_scores[i])
+			formatted_score = frame.get_score_formatted_for_table(score) + "|"
+			accumulated_score_line.append(formatted_score)
+		total_score = max(accumulated_scores)
+		formatted_total = self.get_total_score_formatted_for_table(total_score)
+		accumulated_score_line.append(formatted_total)
+		accumulated_score_line.append("|")
+		print(''.join(accumulated_score_line))
 
 	def get_value_of_two_throws_after_frame(self, index): 
 		#TODO: improve name of index
@@ -329,4 +346,4 @@ def random_run():
 		print_score_sheet(players)
 
 
-run()
+random_run()
