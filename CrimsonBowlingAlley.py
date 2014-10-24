@@ -4,6 +4,8 @@ Bowling Score Keeper
 This module takes input from bowling alley hardware, and updates and
 displays player scores in a table accordingly.
 
+See README.txt for an example of usage.
+
 This module was written by Isaac Dykeman
 """
 
@@ -93,7 +95,8 @@ class Frame:
 		first and second throw scores is 10 and the frame is not a
 		strike, else, False.
 		"""
-		return self.pair_is_spare(self.get_first_throw(),self.get_second_throw())
+		return self.pair_is_spare(self.get_first_throw()
+			,self.get_second_throw())
 
 	def get_throws_score_string(self):
 		"""
@@ -118,31 +121,14 @@ class Frame:
 			first_symbol  = self.get_first_throw()
 			second_symbol = self.get_second_throw()
 			third_symbol  = "-"
-			# unless it is a strike or a spare, the third frame shows a 
+			# unless it is a strike or a spare, the third frame shows a
 			# dash as its thrid symbol
-			'''
-			if self.is_spare() or self.is_strike():
-				third_symbol = self.get_third_throw()
-				if self.is_strike():
-					first_symbol  = "X"
-					if self.get_second_throw() + self.get_third_throw() == 10:
-						if self.get_second_throw() != 10 and self.get_third_throw() != 10:
-							third_symbol = "/"
-				elif self.is_spare():
-					second_symbol = "/"
-				if self.get_second_throw() == 10 and self.get_first_throw() == 10:
-					second_symbol = "X"
-				if self.get_third_throw() == 10:
-					if self.get_second_throw() == 10 or self.is_spare():
-						third_symbol = "X"
-					else:
-						third_symbol = "/"
-						'''
 			if self.is_strike() or self.is_spare():
 				third_symbol = self.get_third_throw()
 				if self.is_strike():
 					first_symbol = "X"
-					if self.pair_is_spare(self.get_second_throw(),self.get_third_throw()):
+					if self.pair_is_spare(self.get_second_throw()
+						,self.get_third_throw()):
 						third_symbol = "/"
 					else:
 						if self.get_second_throw() == 10:
@@ -153,8 +139,6 @@ class Frame:
 					second_symbol = "/"
 					if self.get_third_throw() == 10:
 						third_symbol = "X"
-
-
 		return "[%s,%s,%s]" % (first_symbol, second_symbol, third_symbol)
 
 	def is_done(self):
@@ -182,7 +166,7 @@ class Frame:
 
 		Args:
 			score (int): The number of pins the player knocked down on
-				this throw.  Be cautious: this is not necesarilly the
+				this throw.  Be cautious: this is not necessarily the
 				same as the total number of pins that are down at this
 				time.
 		"""
@@ -212,8 +196,8 @@ class Frame:
 		"""
 		Returns (string) the textual representation of the total score
 		of the game at this frame.  The length of the result string is
-		trimmed so that it does not warp the formatting of the table
-		when it is printed.
+		trimmed or extended so that it does not disrupt the formatting
+		of the table when it is printed.
 
 		Args:
 			score (int): The score that should be displayed in this
@@ -236,7 +220,7 @@ class Frame:
 
 	def get_num_pins_currently_up(self):
 		"""
-		Returns (int) the number of pins that are still standing.
+		Returns (int) the number of pins that are currently standing.
 		Takes into account pin resetting.
 		"""
 		if self.num_throws_taken()==0:
@@ -263,9 +247,9 @@ class Frame:
 
 class Player:
 	"""
-	Represents a single player of a bowling game.  Contains that
-	player's score data and name, and tracks which frame the player is
-	currently on
+	Represents a player of a bowling game.  Contains that player's
+	score data and name, and tracks which frame the player is currently
+	on.
 
 	Args:
 		name (string): The name of the player.
@@ -282,7 +266,7 @@ class Player:
 		for dummy_idx in range(FRAMES_PER_GAME-1):
 			self._frames.append(Frame(2))
 		self._frames.append(Frame(3))
-		#all but the last frames are frames of 2 throws
+		# all but the last frames are frames of at most 2 throws
 
 	def get_name(self):
 		"""
@@ -294,7 +278,7 @@ class Player:
 		"""
 		Returns (string) this players name limitted in length to the
 		width of the Name column in the score chart.  This way, names
-		cannot destort the spacing of the table.
+		cannot disrupt the spacing of the table.
 		"""
 		return self._name.ljust(WIDTH_OF_NAME_COLUMN)[:WIDTH_OF_NAME_COLUMN]
 
@@ -473,8 +457,9 @@ def get_num_pins_down(player_name):
 	"""
 	Asks for input from the bowling hardware (or a human inputting 
 	dummy data) and then returns the number of pins that are currently
-	down.  The input is a string where each F represtents a pin that is
-	down and each T represents a pin that is up.
+	down.  The input is a string of length 10 where each F represtents
+	a pin that is down and each T represents a pin that is up.  The
+	input is not case sensitive.
 
 	Args:
 		player_name (string): The name of the player who is meant to
@@ -546,71 +531,4 @@ def run():
 		print_score_sheet(players)
 
 run()
-
-"""
-An example of the usage and output of this program:
-
-The input from the machine is inputted as a string where an F
-represents a downed pin, and a T represents and upright pin.
-
-
-enter the number of players: 2
-enter the name of player 1: Isaac
-enter the name of player 2: Crimson
-enter pin state for Isaac: fffttttttt
-enter pin state for Isaac: fffffttttt
-enter pin state for Crimson: fffftttttt
-enter pin state for Crimson: fffftttfff
-====================================Current=Scores====================================
-|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
---------------------------------------------------------------------------------------
-|Isaac       |[3,2]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
-|            |5    |     |     |     |     |     |     |     |     |       |5        |
---------------------------------------------------------------------------------------
-|Crimson     |[4,3]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
-|            |7    |     |     |     |     |     |     |     |     |       |7        |
-enter pin state for Isaac: ffffffffff
-enter pin state for Crimson: fffffffttt
-enter pin state for Crimson: ffffffffff
-====================================Current=Scores====================================
-|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
---------------------------------------------------------------------------------------
-|Isaac       |[3,2]|[X,-]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
-|            |5    |15   |     |     |     |     |     |     |     |       |15       |
---------------------------------------------------------------------------------------
-|Crimson     |[4,3]|[7,/]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
-|            |7    |17   |     |     |     |     |     |     |     |       |17       |
-enter pin state for Isaac: fffttttttt
-enter pin state for Isaac: fffttttttt
-enter pin state for Crimson: ftftftftft
-enter pin state for Crimson: ffffftftft
-
-
-. . .
-
-
-====================================Current=Scores====================================
-|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
---------------------------------------------------------------------------------------
-|Isaac       |[3,2]|[X,-]|[3,0]|[6,2]|[5,/]|[7,2]|[4,2]|[6,1]|[5,1]|[ , , ]|         |
-|            |5    |18   |21   |29   |46   |55   |61   |68   |74   |       |74       |
---------------------------------------------------------------------------------------
-|Crimson     |[4,3]|[7,/]|[5,2]|[X,-]|[3,0]|[3,5]|[0,1]|[X,-]|[8,/]|[ , , ]|         |
-|            |7    |22   |29   |42   |45   |53   |54   |74   |84   |       |84       |
-enter pin state for Isaac: ffffffffff
-enter pin state for Isaac: ttttffffff
-enter pin state for Isaac: ffffffffff
-enter pin state for Crimson: tfffffffff 
-enter pin state for Crimson: ffffffffff
-enter pin state for Crimson: ffffffffff
-====================================Current=Scores====================================
-|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
---------------------------------------------------------------------------------------
-|Isaac       |[3,2]|[X,-]|[3,0]|[6,2]|[5,/]|[7,2]|[4,2]|[6,1]|[5,1]|[X,6,/]|         |
-|            |5    |18   |21   |29   |46   |55   |61   |68   |74   |94     |94       |
---------------------------------------------------------------------------------------
-|Crimson     |[4,3]|[7,/]|[5,2]|[X,-]|[3,0]|[3,5]|[0,1]|[X,-]|[8,/]|[9,/,X]|         |
-|            |7    |22   |29   |42   |45   |53   |54   |74   |93   |113    |113      |
-
-"""
 
