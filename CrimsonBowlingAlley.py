@@ -1,13 +1,14 @@
 """
 Bowling Score Keeper
 
-This module takes input from bowling alley hardware, and update and displays
-player scores accordingly
+This module takes input from bowling alley hardware, and updates and
+displays player scores in a table accordingly.
 
 This module was written by Isaac Dykeman
 """
 
 import random
+
 WIDTH_OF_NAME_COLUMN = 12
 WIDTH_OF_TOTAL_COLUMN = 9
 FRAMES_PER_GAME = 10
@@ -19,9 +20,9 @@ COLUMNS_HEADER     = "|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  
 
 class Frame:
 	"""
-	A single frame in one player's bowling game. Can be a frame of two
-	balls, or can be the final frame, which has two or three balls, 
-	depending on whether the player gets a strike on the first ball of
+	A single frame in one player's bowling game. This can be a frame of
+	two balls, or it can be the final frame, which has two or three
+	balls depending on whether the player gets a strike or a spare on
 	that frame.
 
 	Args:
@@ -29,7 +30,8 @@ class Frame:
 
 	Attributes:
 		_num_throws (int): Max possible throws in this frame.
-		_throws (list of int): The scores for each throw
+		_throws (list of int): The scores for each throw in the order
+			they were thrown.
 	"""
 	def __init__(self, num_throws):
 		self._num_throws = num_throws
@@ -64,46 +66,6 @@ class Frame:
 		"""
 		return self.get_throw(2)
 
-	def get_throws_score_string(self):
-		"""
-		Returns a string which is a readable representations of the
-		scores the player has made on the throws in this frame.
-		"""
-		if not self.is_three_throw_frame(): 
-			if not self.is_done():
-				return "[ , ]"
-			# seperate logic for frames 1-9 and frame 10
-			first_symbol  = self.get_first_throw()
-			second_symbol = self.get_second_throw()
-			if self.is_strike():
-				return "[X,-]"
-			if self.is_spare():
-				second_symbol = "/"
-			return "[%s,%s]" % (first_symbol,second_symbol)
-		else: # is three throw frame
-			if not self.is_done():
-				return "[ , , ]"
-			first_symbol  = self.get_first_throw()
-			second_symbol = self.get_second_throw()
-			third_symbol  = "-"
-			if self.is_spare() or self.is_strike():
-				# unless it is a strike or a spare, the third frame shows a 
-				# dash as its thrid symbol
-				third_symbol = self.get_third_throw()
-			if self.is_strike():
-				first_symbol  = "X"
-				if self.get_second_throw() + self.get_third_throw() == 10:
-					if self.get_second_throw() != 10 and self.get_third_throw() != 10:
-						third_symbol = "/"
-			elif self.is_spare():
-				second_symbol = "/"
-			if self.get_second_throw() == 10 and self.get_first_throw() == 10:
-				second_symbol = "X"
-			if self.get_third_throw() == 10:
-				third_symbol = "X"
-
-			return "[%s,%s,%s]" % (first_symbol, second_symbol, third_symbol)
-
 	def is_strike(self):
 		"""
 		Returns whether the frame is a strike: True if the first throw
@@ -111,14 +73,89 @@ class Frame:
 		"""
 		return self.get_first_throw()==10
 
+	def pair_is_spare(self, score_1, score_2):
+		"""
+		Returns whether the two given scores in sequence in the same
+		frame would constitute a spare.  True if they make a spare,
+		False if not.  
+
+		Args:
+			score_1 (int): The first score in the sequence.
+			score_2 (int): The second score in the sequence.
+		"""
+		sums_to_10 = score_1 + score_2 == 10
+		return sums_to_10 and not score_1 == 10
+
+
 	def is_spare(self):
 		"""
 		Returns whether the frame is a spare: True if the sum of the
 		first and second throw scores is 10 and the frame is not a
 		strike, else, False.
 		"""
-		sums_to_10 = self.get_first_throw() + self.get_second_throw() == 10
-		return sums_to_10 and not self.is_strike()
+		return self.pair_is_spare(self.get_first_throw(),self.get_second_throw())
+
+	def get_throws_score_string(self):
+		"""
+		Returns a string which is a human readable representation of
+		the scores the player has made on the throws in this frame.
+		"""
+		# seperate logic for frames 1-9 and frame 10
+		if not self.is_three_throw_frame():
+			if not self.is_done():
+				# display blank scores instead of ambiguous scores of 0
+				return "[ , ]" 
+			first_symbol  = self.get_first_throw()
+			second_symbol = self.get_second_throw()
+			if self.is_strike():
+				return "[X,-]"
+			if self.is_spare():
+				second_symbol = "/"
+			return "[%s,%s]" % (first_symbol,second_symbol)
+		else: # this is a three throw frame
+			if not self.is_done():
+				return "[ , , ]"
+			first_symbol  = self.get_first_throw()
+			second_symbol = self.get_second_throw()
+			third_symbol  = "-"
+			# unless it is a strike or a spare, the third frame shows a 
+			# dash as its thrid symbol
+			'''
+			if self.is_spare() or self.is_strike():
+				third_symbol = self.get_third_throw()
+				if self.is_strike():
+					first_symbol  = "X"
+					if self.get_second_throw() + self.get_third_throw() == 10:
+						if self.get_second_throw() != 10 and self.get_third_throw() != 10:
+							third_symbol = "/"
+				elif self.is_spare():
+					second_symbol = "/"
+				if self.get_second_throw() == 10 and self.get_first_throw() == 10:
+					second_symbol = "X"
+				if self.get_third_throw() == 10:
+					if self.get_second_throw() == 10 or self.is_spare():
+						third_symbol = "X"
+					else:
+						third_symbol = "/"
+						'''
+			if self.is_strike() or self.is_spare():
+				third_symbol = self.get_third_throw()
+				if self.is_strike():
+					first_symbol = "X"
+					if self.pair_is_spare(self.get_second_throw(),self.get_third_throw()):
+						third_symbol = "/"
+					else:
+						if self.get_second_throw() == 10:
+							second_symbol = "X"
+							if self.get_third_throw() == 10:
+								third_symbol = "X"
+				elif self.is_spare():
+					second_symbol = "/"
+					if self.get_third_throw() == 10:
+						third_symbol = "X"
+
+
+		return "[%s,%s,%s]" % (first_symbol, second_symbol, third_symbol)
 
 	def is_done(self):
 		"""
@@ -222,8 +259,6 @@ class Frame:
 				return 10
 			else: # must be the second throw after a non-strike first throw
 				return 10 - self.get_first_throw()
-
-
 
 
 class Player:
@@ -345,7 +380,8 @@ class Player:
 		if self._frames[frame_index].is_three_throw_frame():
 			return self._frames[frame_index].get_third_throw()
 		else:
-			if not self._frames[frame_index+1].is_strike():
+			if not self._frames[frame_index+1].is_strike() \
+				or self._frames[frame_index+1].is_three_throw_frame():
 				# A strike with a strike after it returns the sum of the scores
 				# (20) of those two throws, plus the score of the next throw.
 				return self._frames[frame_index+1].get_second_throw()
