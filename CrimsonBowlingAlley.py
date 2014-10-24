@@ -19,9 +19,10 @@ COLUMNS_HEADER     = "|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  
 
 class Frame:
 	"""
-	A single frame in one player's bowling game. Can be a frame of two balls,
-	or can be the final frame, which has two or three balls, depending on
-	whether the player gets a strike on the first ball of that frame.
+	A single frame in one player's bowling game. Can be a frame of two
+	balls, or can be the final frame, which has two or three balls, 
+	depending on whether the player gets a strike on the first ball of
+	that frame.
 
 	Args:
 		num_throws (int): Max possible throws in this frame.
@@ -47,26 +48,26 @@ class Frame:
 			
 	def get_first_throw(self):
 		"""
-		Returns the score (int) of the first throw of the frame	.	
+		Returns the score (int) of the first throw of the frame	.
 		"""
 		return self.get_throw(0)
 
 	def get_second_throw(self):
 		"""
-		Returns the score (int) of the second throw of the frame.		
+		Returns the score (int) of the second throw of the frame.	
 		"""
 		return self.get_throw(1)
 
 	def get_third_throw(self):
 		"""
-		Returns the score (int) of the third throw of the frame.	
+		Returns the score (int) of the third throw of the frame.
 		"""
 		return self.get_throw(2)
 
 	def get_throws_score_string(self):
 		"""
-		Returns a string which is a readable representations of the scores the
-		player has made on the throws in this frame.
+		Returns a string which is a readable representations of the
+		scores the player has made on the throws in this frame.
 		"""
 		if not self.is_three_throw_frame(): 
 			if not self.is_done():
@@ -91,33 +92,38 @@ class Frame:
 				third_symbol = self.get_third_throw()
 			if self.is_strike():
 				first_symbol  = "X"
+				if self.get_second_throw() + self.get_third_throw() == 10:
+					if self.get_second_throw() != 10 and self.get_third_throw() != 10:
+						third_symbol = "/"
 			elif self.is_spare():
 				second_symbol = "/"
-			if self.get_second_throw() == 10:
+			if self.get_second_throw() == 10 and self.get_first_throw() == 10:
 				second_symbol = "X"
 			if self.get_third_throw() == 10:
 				third_symbol = "X"
+
 			return "[%s,%s,%s]" % (first_symbol, second_symbol, third_symbol)
 
 	def is_strike(self):
 		"""
-		Returns whether the frame is a strike: True if the first throw scored 
-		10, else, False
+		Returns whether the frame is a strike: True if the first throw
+		scored 10, else, False
 		"""
 		return self.get_first_throw()==10
 
 	def is_spare(self):
 		"""
-		Returns whether the frame is a spare: True if the sum of the first and
-		second throw scores is 10 and the frame is not a strike, else, False.
+		Returns whether the frame is a spare: True if the sum of the
+		first and second throw scores is 10 and the frame is not a
+		strike, else, False.
 		"""
 		sums_to_10 = self.get_first_throw() + self.get_second_throw() == 10
 		return sums_to_10 and not self.is_strike()
 
 	def is_done(self):
 		"""
-		Returns True if there is another ball to be thrown in this frame, else,
-		returns False.
+		Returns True if there is another ball to be thrown in this
+		frame, else, returns False.
 		"""
 		if not self.is_three_throw_frame():
 			return len(self._throws) >= self._num_throws or self.is_strike()
@@ -138,9 +144,10 @@ class Frame:
 		Adds the players score on a throw to this frame.
 
 		Args:
-			score (int): The number of pins the player knocked down on this
-				throw.  Be cautious: this is not necesarilly the same as the
-				total number of pins that are down at this time.
+			score (int): The number of pins the player knocked down on
+				this throw.  Be cautious: this is not necesarilly the
+				same as the total number of pins that are down at this
+				time.
 		"""
 		assert not self.is_done() # a full frame cannot accept more thows
 		self._throws.append(score)
@@ -153,8 +160,8 @@ class Frame:
 
 	def is_three_throw_frame(self):
 		"""
-		Returns True if this is the final frame, which has a max of three
-		throws.
+		Returns True if this is the final frame, which has a max of
+		three throws.
 		"""
 		return self._num_throws == 3
 
@@ -166,23 +173,64 @@ class Frame:
 
 	def get_score_formatted_for_table(self,score):
 		"""
-		Returns (string) the textual representation of the total score of the
-		game at this frame.  The length of the result string is trimmed so that
-		it does not warp the formatting of the table when it is printed.
+		Returns (string) the textual representation of the total score
+		of the game at this frame.  The length of the result string is
+		trimmed so that it does not warp the formatting of the table
+		when it is printed.
 
 		Args:
-			score (int): The score that should be displayed in this frame of
-			the table.
+			score (int): The score that should be displayed in this
+				frame of the table.
 		"""
 		width_of_table_column = 2 + self._num_throws * 2 - 1
 		left_justified_score = str(score).ljust(width_of_table_column)
 		return left_justified_score[:width_of_table_column]		
 
+	def get_throw_score_from_new_pin_state(self,num_pins_down):
+		"""
+		Returns (int) the score the player recieves on a throw made for
+		this frame where num_pins_down pins were down after the throw.
+
+		Args:
+			num_pins_down (int): The number of pins down after the
+				throw in question.
+		"""
+		return num_pins_down - (10 - self.get_num_pins_currently_up())
+
+	def get_num_pins_currently_up(self):
+		"""
+		Returns (int) the number of pins that are still standing.
+		Takes into account pin resetting.
+		"""
+		if self.num_throws_taken()==0:
+			return 10
+		if not self.is_three_throw_frame():
+			return 10 - self.get_first_throw()
+		else: # is a three throw frame
+			if self.is_strike():
+				if self.num_throws_taken() == 1:
+					return 10 
+					# pins have been reset
+				else: # must have taken 2 throws already
+					if self.get_second_throw() == 10:
+						return 10
+						# double strike means pins have been reset for third
+						# throw
+					else:
+						return 10 - self.get_second_throw()
+			elif self.is_spare(): # must be third now throw if this is a spare
+				return 10
+			else: # must be the second throw after a non-strike first throw
+				return 10 - self.get_first_throw()
+
+
+
 
 class Player:
 	"""
-	Represents a single player of a bowling game.  Contains that player's score
-	data and name, and tracks which frame the player is currently on
+	Represents a single player of a bowling game.  Contains that
+	player's score data and name, and tracks which frame the player is
+	currently on
 
 	Args:
 		name (string): The name of the player.
@@ -199,6 +247,7 @@ class Player:
 		for dummy_idx in range(FRAMES_PER_GAME-1):
 			self._frames.append(Frame(2))
 		self._frames.append(Frame(3))
+		#all but the last frames are frames of 2 throws
 
 	def get_name(self):
 		"""
@@ -208,23 +257,24 @@ class Player:
 
 	def get_name_formatted_for_table(self):
 		"""
-		Returns (string) this players name limitted in length to the width of 
-		the Name column in the score chart.  This way, names cannot destort
-		the spacing of the table.
+		Returns (string) this players name limitted in length to the
+		width of the Name column in the score chart.  This way, names
+		cannot destort the spacing of the table.
 		"""
 		return self._name.ljust(WIDTH_OF_NAME_COLUMN)[:WIDTH_OF_NAME_COLUMN]
 
 	def get_total_score_formatted_for_table(self, score):
 		"""
-		Returns (string) this score limitted in length to the width of the 
-		Total column in the score chart.  This way, names cannot destort the
-		spacing of the table.
+		Returns (string) this score limitted in length to the width of
+		the Total column in the score chart.  This way, names cannot
+		destort the spacing of the table.
 		"""
 		return str(score).ljust(WIDTH_OF_TOTAL_COLUMN)[:WIDTH_OF_TOTAL_COLUMN]
 
 	def print_score(self):
 		"""
-		Prints the lines of the score table that describe this player's scores.
+		Prints the lines of the score table that describe this player's
+		scores.
 		"""
 		print(PLAYER_ROW_DIVIDER)
 
@@ -243,7 +293,8 @@ class Player:
 			score = str(accumulated_scores[i])
 			formatted_score = ""
 			if frame.is_done():
-				formatted_score = frame.get_score_formatted_for_table(score) + "|"
+				formatted_score = (frame.get_score_formatted_for_table(score) 
+					+ "|")
 			else:
 				formatted_score = frame.get_score_formatted_for_table("") + "|"
 			accumulated_score_line.append(formatted_score)
@@ -256,24 +307,24 @@ class Player:
 
 	def get_value_of_two_throws_after_strike_on_frame(self, frame_index): 
 		"""
-		Returns (int) the sum of the scores of the two throws the player makes
-		after scoring a strike on the frame at frame_index.
+		Returns (int) the sum of the scores of the two throws the 
+		player makes after scoring a strike on the frame at frame_index.
 
 		Args:
-			frame_index (int): The index of the frame on which the strike was
-				scored.
+			frame_index (int): The index of the frame on which the 
+				strike was scored.
 		"""
 		return self.get_score_of__first_throw_after_frame(frame_index) \
 			+ self.get_score_of__second_throw_after_strike_on_frame(frame_index)
 
 	def get_score_of__first_throw_after_frame(self, frame_index):
 		"""
-		Returns (int) the value of the first throw made after the completion
-		of the frame at frame_index.
+		Returns (int) the value of the first throw made after the
+		completion of the frame at frame_index.
 
 		Args:
-			frame_index (int): The index of the frame before the throw whose
-				value should be returned.
+			frame_index (int): The index of the frame before the throw
+				whose value should be returned.
 		"""
 		if self._frames[frame_index].is_three_throw_frame():
 			return self._frames[frame_index].get_third_throw()
@@ -282,13 +333,14 @@ class Player:
 
 	def get_score_of__second_throw_after_strike_on_frame(self, frame_index):
 		"""
-		Returns (int) the values of the second throw made after the completion
-		of the frame at frame_index.  This is only used when calculating the
-		value of a strike.
+		Returns (int) the values of the second throw made after the
+		completion of the frame at frame_index.  This is only used
+		when calculating the value of a strike.
 
 		Args:
-			frame_index(int):  The index of the frame with the strike, two
-				throws after which the throw whose score is returned was made.
+			frame_index(int):  The index of the frame with the strike,
+				two throws after which the throw whose score is 
+				returned was made.
 		"""
 		if self._frames[frame_index].is_three_throw_frame():
 			return self._frames[frame_index].get_third_throw()
@@ -302,10 +354,11 @@ class Player:
 
 	def get_score_list(self):
 		"""
-		Returns (list of int) a list of the scores for the game to be displayed
-		on each frame of the score table.  There is one element in the list per
-		frame of the game.  If the game is not complete, the list contains the 
-		total score so far in the game for all incomplete frames.
+		Returns (list of int) a list of the scores for the game to be
+		displayed on each frame of the score table.  There is one
+		element in the list per frame of the game.  If the game is not
+		complete, the list contains the total score so far in the game
+		for all incomplete frames.
 		"""
 		accumulated_score=0
 		result = []
@@ -317,31 +370,34 @@ class Player:
 			else:
 				if(frame.is_strike()):
 					accumulated_score += 10
-					accumulated_score += self.get_value_of_two_throws_after_strike_on_frame(i)
+					accumulated_score += \
+						self.get_value_of_two_throws_after_strike_on_frame(i)
 				elif(frame.is_spare()):
 					accumulated_score += 10
-					accumulated_score += self.get_score_of__first_throw_after_frame(i)
+					accumulated_score += \
+						self.get_score_of__first_throw_after_frame(i)
 				else:
-					accumulated_score += frame.get_first_throw() + frame.get_second_throw()
+					accumulated_score += (frame.get_first_throw() 
+						+ frame.get_second_throw())
 			result.append(accumulated_score)
 		return result
 
 	def has_another_throw_to_make_in_game(self):
 		"""
-		Returns (boolean) True if the player must make another throw before the
-		end of the game, else, returns False.
+		Returns (boolean) True if the player must make another throw
+		before the end of the game, else, returns False.
 		"""
 		return self._current_frame < 10
 
 	def score(self, score):
 		"""
-		Handles the new score information by adding the given number of pins
-		the palyer knocked down with a throw to the frame currently being
-		played.  
+		Handles the new score information by adding the given number of
+		pins the palyer knocked down with a throw to the frame
+		currently being played.  
 
 		Args:
-			score (int): The number of pins the player knocked down with her
-				latest throw.
+			score (int): The number of pins the player knocked down
+				with her latest throw.
 		"""
 		if self.has_another_throw_to_make_in_game():
 			if not self.get_current_frame().is_done():
@@ -351,8 +407,8 @@ class Player:
 
 	def get_current_frame(self):
 		"""
-		Returns (Frame) the frame the player is currently on, that is, the
-		first frame in this player's game which is not complete.
+		Returns (Frame) the frame the player is currently on, that is,
+		the first frame in this player's game which is not complete.
 		"""
 		return self._frames[self._current_frame]
 
@@ -369,8 +425,8 @@ def print_score_sheet(players):
 
 def all_players_done(players):
 	"""
-	Returns (boolean) True if all the players in the game have made all of
-	their throws for this game, else, returns False.
+	Returns (boolean) True if all the players in the game have made all
+	of their throws for this game, else, returns False.
 	"""
 	for player in players:
 		if player.has_another_throw_to_make_in_game():
@@ -378,25 +434,71 @@ def all_players_done(players):
 	return True
 
 def get_num_pins_down(player_name):
+	"""
+	Asks for input from the bowling hardware (or a human inputting 
+	dummy data) and then returns the number of pins that are currently
+	down.  The input is a string where each F represtents a pin that is
+	down and each T represents a pin that is up.
+
+	Args:
+		player_name (string): The name of the player who is meant to
+			throw a ball now.
+	"""
 	input = raw_input("enter pin state for %s: " %(player_name))
 	input = input.upper();
-	if len(input)!=10:
-		print ("invalid pin state string")
+	if len(input) != 10:
+		print ("invalid pin state string length")
 		return get_num_pins_down(player_name)
 	return input.count('F')
 
-def play_one_frame(player):
+def play_one_random_frame(player):
+	"""
+	Given the player who is bowling this frame, plays one frame of the
+	game using dummy data.
+
+	Args:
+		player (Player): The player who is bowling this frame.
+	"""
 	start_frame = player.get_current_frame()
-	num_pins_down = 0
-	while player.has_another_throw_to_make_in_game() and start_frame == player.get_current_frame():
-		num_pins_down_on_this_throw = get_num_pins_down(player.get_name())
-		#if(num_pins_down_on_this_throw>=num_pins_down):
-			# this is to ensure that incorrect machine reading which says a pin
-			# has come back up does not result in a negative score
-		player.score(num_pins_down_on_this_throw-num_pins_down)
-		num_pins_down = num_pins_down_on_this_throw
+	while player.has_another_throw_to_make_in_game() \
+		and start_frame == player.get_current_frame():
+		score = random.randrange(0, start_frame.get_num_pins_currently_up()+1)
+		player.score(score)
+
+def random_run():
+	"""
+	Runs an entire game using random data for all throws.
+	"""
+	num_players = int(raw_input("enter the number of players: "))
+	players = []
+	for i in range(1,num_players+1):
+		new_player = Player(raw_input("enter the name of player "+str(i)+": "))
+		players.append(new_player)
+	while not all_players_done(players):
+		for player in players:
+			play_one_random_frame(player)
+		print_score_sheet(players)
+
+def play_one_frame(player):
+	"""
+	Given the player who is bowling this frame, plays one frame of the
+	game, asking for input on each throw.
+
+	Args:
+		player (Player): The player who is bowling this frame.
+	"""
+	start_frame = player.get_current_frame()
+	while player.has_another_throw_to_make_in_game() \
+		and start_frame == player.get_current_frame():
+		num_pins_down = get_num_pins_down(player.get_name())
+		score = start_frame.get_throw_score_from_new_pin_state(num_pins_down)
+		player.score(score)
 
 def run():
+	"""
+	Runs an entire game, asking for player information and then data on
+	each throw.
+	"""
 	num_players = int(raw_input("enter the number of players: "))
 	players = []
 	for i in range(1,num_players+1):
@@ -409,41 +511,70 @@ def run():
 
 run()
 
-'''
-Example usage of this module:
+"""
+An example of the usage and output of this program:
 
-enter the number of players: 2   
-enter the name of player 1: Crimson
-enter the name of player 2: Intern
-enter pin state for Crimson: tttfffffff
+The input from the machine is inputted as a string where an F
+represents a downed pin, and a T represents and upright pin.
+
+
+enter the number of players: 2
+enter the name of player 1: Isaac
+enter the name of player 2: Crimson
+enter pin state for Isaac: fffttttttt
+enter pin state for Isaac: fffffttttt
+enter pin state for Crimson: fffftttttt
+enter pin state for Crimson: fffftttfff
+====================================Current=Scores====================================
+|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
+--------------------------------------------------------------------------------------
+|Isaac       |[3,2]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
+|            |5    |     |     |     |     |     |     |     |     |       |5        |
+--------------------------------------------------------------------------------------
+|Crimson     |[4,3]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
+|            |7    |     |     |     |     |     |     |     |     |       |7        |
+enter pin state for Isaac: ffffffffff
+enter pin state for Crimson: fffffffttt
 enter pin state for Crimson: ffffffffff
-enter pin state for Intern: ttttffffftt
-invalid pin state string                
-enter pin state for Intern: ttttffffff 
-enter pin state for Intern: ttttffffff
 ====================================Current=Scores====================================
 |    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
 --------------------------------------------------------------------------------------
-|Crimson     |[7,/]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
-|            |10   |     |     |     |     |     |     |     |     |       |10       |
+|Isaac       |[3,2]|[X,-]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
+|            |5    |15   |     |     |     |     |     |     |     |       |15       |
 --------------------------------------------------------------------------------------
-|Intern      |[6,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
-|            |6    |     |     |     |     |     |     |     |     |       |6        |
-enter pin state for Crimson: tttffftttt
-enter pin state for Crimson: fffffftttt
-enter pin state for Intern: fffftttttt
-enter pin state for Intern: ffffffffff
+|Crimson     |[4,3]|[7,/]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , ]|[ , , ]|         |
+|            |7    |17   |     |     |     |     |     |     |     |       |17       |
+enter pin state for Isaac: fffttttttt
+enter pin state for Isaac: fffttttttt
+enter pin state for Crimson: ftftftftft
+enter pin state for Crimson: ffffftftft
+
+
+. . .
+
+
 ====================================Current=Scores====================================
 |    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
 --------------------------------------------------------------------------------------
-|Crimson     |[7,/]|[3,3]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
-|            |13   |19   |     |     |     |     |     |     |     |       |19       |
+|Isaac       |[3,2]|[X,-]|[3,0]|[6,2]|[5,/]|[7,2]|[4,2]|[6,1]|[5,1]|[ , , ]|         |
+|            |5    |18   |21   |29   |46   |55   |61   |68   |74   |       |74       |
 --------------------------------------------------------------------------------------
-|Intern      |[6,0]|[4,/]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0]|[0,0,-]|         |
-|            |6    |16   |     |     |     |     |     |     |     |       |16       |
-'''
+|Crimson     |[4,3]|[7,/]|[5,2]|[X,-]|[3,0]|[3,5]|[0,1]|[X,-]|[8,/]|[ , , ]|         |
+|            |7    |22   |29   |42   |45   |53   |54   |74   |84   |       |84       |
+enter pin state for Isaac: ffffffffff
+enter pin state for Isaac: ttttffffff
+enter pin state for Isaac: ffffffffff
+enter pin state for Crimson: tfffffffff 
+enter pin state for Crimson: ffffffffff
+enter pin state for Crimson: ffffffffff
+====================================Current=Scores====================================
+|    Name    |  1  |  2  |  3  |  4  |  5  |  6  |  7  |  8  |  9  |   10  |  Total  |
+--------------------------------------------------------------------------------------
+|Isaac       |[3,2]|[X,-]|[3,0]|[6,2]|[5,/]|[7,2]|[4,2]|[6,1]|[5,1]|[X,6,/]|         |
+|            |5    |18   |21   |29   |46   |55   |61   |68   |74   |94     |94       |
+--------------------------------------------------------------------------------------
+|Crimson     |[4,3]|[7,/]|[5,2]|[X,-]|[3,0]|[3,5]|[0,1]|[X,-]|[8,/]|[9,/,X]|         |
+|            |7    |22   |29   |42   |45   |53   |54   |74   |93   |113    |113      |
 
-
-
-
+"""
 
